@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plantillas de WhatsApp</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #111b21;
+      color: #e9edef;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #202c33;
+      padding: 12px 20px;
+      border-bottom: 1px solid #2a3942;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    header h1 { font-size: 1.1rem; font-weight: 600; }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .header-actions a, .header-actions button {
+      font-size: 0.8rem;
+      color: #00a884;
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .layout {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      min-height: 0;
+    }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+
+    .panel {
+      padding: 24px;
+      overflow-y: auto;
+    }
+
+    .panel-form {
+      background: #0b141a;
+      border-right: 1px solid #2a3942;
+    }
+
+    .panel-list { background: #111b21; }
+
+    h2 {
+      font-size: 1rem;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 0.85rem;
+      color: #8696a0;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    label {
+      display: block;
+      font-size: 0.75rem;
+      color: #8696a0;
+      margin: 14px 0 6px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: none;
+      border-radius: 8px;
+      background: #2a3942;
+      color: #e9edef;
+      font-size: 0.9rem;
+      font-family: inherit;
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+      line-height: 1.45;
+    }
+
+    .hint {
+      font-size: 0.72rem;
+      color: #8696a0;
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+
+    .hint code {
+      background: #202c33;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+    }
+
+    .examples-box {
+      margin-top: 10px;
+      padding: 12px;
+      background: #202c33;
+      border-radius: 8px;
+      display: none;
+    }
+
+    .examples-box.visible { display: block; }
+
+    .examples-box .example-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 8px;
+    }
+
+    .examples-box .example-row span {
+      font-size: 0.75rem;
+      color: #8696a0;
+      min-width: 36px;
+    }
+
+    .btn {
+      margin-top: 20px;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: #00a884;
+      color: #fff;
+      width: 100%;
+    }
+
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-secondary {
+      background: #2a3942;
+      color: #e9edef;
+      margin-top: 10px;
+    }
+
+    .status-bar {
+      padding: 8px 20px;
+      font-size: 0.8rem;
+      min-height: 32px;
+      background: #202c33;
+      border-top: 1px solid #2a3942;
+    }
+
+    .status-bar.error { color: #ea4335; }
+    .status-bar.success { color: #00a884; }
+
+    .tenant-line {
+      font-size: 0.8rem;
+      color: #8696a0;
+      margin-bottom: 16px;
+      padding: 10px 12px;
+      background: #202c33;
+      border-radius: 8px;
+    }
+
+    .template-card {
+      background: #202c33;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      border: 1px solid #2a3942;
+    }
+
+    .template-card .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .template-card .name {
+      font-weight: 600;
+      font-size: 0.95rem;
+      word-break: break-all;
+    }
+
+    .badge {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 10px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .badge.APPROVED { background: #0d3329; color: #00a884; }
+    .badge.PENDING { background: #3d2f00; color: #f59e0b; }
+    .badge.REJECTED { background: #3d1515; color: #ea4335; }
+    .badge.PAUSED, .badge.DISABLED { background: #2a3942; color: #8696a0; }
+
+    .template-card .meta {
+      font-size: 0.75rem;
+      color: #8696a0;
+      margin-bottom: 8px;
+    }
+
+    .template-card .body-preview {
+      font-size: 0.85rem;
+      line-height: 1.45;
+      color: #aebac1;
+      white-space: pre-wrap;
+    }
+
+    .empty-list {
+      color: #8696a0;
+      font-size: 0.9rem;
+      padding: 24px 0;
+      text-align: center;
+    }
+
+    .preview-box {
+      margin-top: 16px;
+      padding: 14px;
+      background: #005c4b;
+      border-radius: 8px 8px 8px 0;
+      max-width: 320px;
+      font-size: 0.88rem;
+      line-height: 1.45;
+      white-space: pre-wrap;
+    }
+
+    .preview-label {
+      font-size: 0.72rem;
+      color: #8696a0;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Plantillas de mensaje</h1>
+    <div class="header-actions">
+      <span id="header-tenant" style="font-size:0.8rem;color:#8696a0"></span>
+      <a href="/chat">Chat</a>
+      <a href="/connect">Cambiar cuenta</a>
+      <button type="button" id="btn-disconnect">Desconectar</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <section class="panel panel-form">
+      <h2>Crear plantilla</h2>
+      <p class="subtitle">
+        Las plantillas se envían a Meta para revisión. Cuando estén <strong style="color:#00a884;font-weight:600">APPROVED</strong>,
+        podés usarlas para mensajes fuera de la ventana de 24 horas.
+      </p>
+
+      <div class="tenant-line" id="tenant-line">Cargando cuenta...</div>
+
+      <form id="template-form">
+        <label for="name">Nombre interno</label>
+        <input id="name" type="text" placeholder="bienvenida_jasper" required maxlength="512" autocomplete="off">
+        <p class="hint">Solo minúsculas, números y guiones bajos. Ej: <code>pedido_confirmado</code></p>
+
+        <label for="language">Idioma</label>
+        <select id="language" required>
+          <option value="es">Español (es)</option>
+          <option value="es_AR">Español Argentina (es_AR)</option>
+          <option value="en_US">Inglés US (en_US)</option>
+          <option value="pt_BR">Portugués Brasil (pt_BR)</option>
+        </select>
+
+        <label for="category">Categoría</label>
+        <select id="category" required>
+          <option value="UTILITY">UTILITY — transaccional (pedidos, avisos)</option>
+          <option value="MARKETING">MARKETING — promociones</option>
+        </select>
+
+        <label for="body">Texto del mensaje (cuerpo)</label>
+        <textarea id="body" placeholder="Hola {{1}}, gracias por contactar a Jasper Market." required maxlength="1024"></textarea>
+        <p class="hint">Variables con <code>{{1}}</code>, <code>{{2}}</code>, etc. Meta exige ejemplos para aprobar la plantilla.</p>
+
+        <div class="examples-box" id="examples-box">
+          <strong style="font-size:0.8rem">Ejemplos para las variables</strong>
+          <div id="examples-fields"></div>
+        </div>
+
+        <label for="footer">Pie de mensaje (opcional)</label>
+        <input id="footer" type="text" placeholder="Jasper Market" maxlength="60">
+
+        <p class="preview-label">Vista previa</p>
+        <div class="preview-box" id="preview">Escribí el texto arriba para ver la vista previa.</div>
+
+        <button type="submit" class="btn" id="btn-create">Enviar plantilla a Meta</button>
+      </form>
+    </section>
+
+    <section class="panel panel-list">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h2>Plantillas del WABA</h2>
+        <button type="button" id="btn-refresh" class="btn btn-secondary" style="width:auto;margin:0;padding:8px 14px">Actualizar</button>
+      </div>
+      <p class="subtitle" style="margin-bottom:12px">Estado de revisión de Meta. Las nuevas suelen quedar en PENDING unas horas.</p>
+      <div id="template-list">
+        <div class="empty-list">Cargando...</div>
+      </div>
+    </section>
+  </div>
+
+  <div class="status-bar" id="status-bar"></div>
+
+  <script>
+    const form = document.getElementById('template-form');
+    const nameInput = document.getElementById('name');
+    const languageSelect = document.getElementById('language');
+    const categorySelect = document.getElementById('category');
+    const bodyInput = document.getElementById('body');
+    const footerInput = document.getElementById('footer');
+    const examplesBox = document.getElementById('examples-box');
+    const examplesFields = document.getElementById('examples-fields');
+    const previewEl = document.getElementById('preview');
+    const statusBar = document.getElementById('status-bar');
+    const templateList = document.getElementById('template-list');
+    const btnCreate = document.getElementById('btn-create');
+
+    function setStatus(msg, type) {
+      statusBar.textContent = msg || '';
+      statusBar.className = 'status-bar' + (type ? ' ' + type : '');
+    }
+
+    function countVariables(text) {
+      const matches = text.match(/\{\{\d+\}\}/g);
+      return matches ? matches.length : 0;
+    }
+
+    function renderExampleFields() {
+      const count = countVariables(bodyInput.value);
+      if (count === 0) {
+        examplesBox.classList.remove('visible');
+        examplesFields.innerHTML = '';
+        return;
+      }
+
+      examplesBox.classList.add('visible');
+      const existing = [...examplesFields.querySelectorAll('input')].map((el) => el.value);
+      examplesFields.innerHTML = '';
+
+      for (let i = 0; i < count; i++) {
+        const row = document.createElement('div');
+        row.className = 'example-row';
+        row.innerHTML = `<span>{{${i + 1}}}</span>`;
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = `Ejemplo para {{${i + 1}}}`;
+        input.value = existing[i] || `ejemplo_${i + 1}`;
+        input.addEventListener('input', updatePreview);
+        row.appendChild(input);
+        examplesFields.appendChild(row);
+      }
+    }
+
+    function updatePreview() {
+      let text = bodyInput.value || 'Escribí el texto arriba para ver la vista previa.';
+      const exampleInputs = [...examplesFields.querySelectorAll('input')];
+      exampleInputs.forEach((input, idx) => {
+        const re = new RegExp(`\\{\\{${idx + 1}\\}\\}`, 'g');
+        text = text.replace(re, input.value || `{{${idx + 1}}}`);
+      });
+      previewEl.textContent = text;
+      if (footerInput.value.trim()) {
+        previewEl.textContent += '\n\n— ' + footerInput.value.trim();
+      }
+    }
+
+    function statusLabel(status) {
+      const map = {
+        APPROVED: 'Aprobada',
+        PENDING: 'En revisión',
+        REJECTED: 'Rechazada',
+        PAUSED: 'Pausada',
+        DISABLED: 'Deshabilitada'
+      };
+      return map[status] || status;
+    }
+
+    function renderTemplates(templates) {
+      if (!templates.length) {
+        templateList.innerHTML = '<div class="empty-list">No hay plantillas todavía. Creá una con el formulario.</div>';
+        return;
+      }
+
+      templateList.innerHTML = templates.map((t) => `
+        <article class="template-card">
+          <div class="top">
+            <div class="name">${escapeHtml(t.name)}</div>
+            <span class="badge ${escapeHtml(t.status)}">${escapeHtml(statusLabel(t.status))}</span>
+          </div>
+          <div class="meta">${escapeHtml(t.language)} · ${escapeHtml(t.category)}${t.id ? ' · ID ' + escapeHtml(t.id) : ''}</div>
+          <div class="body-preview">${escapeHtml(t.body || '(sin texto)')}</div>
+          ${t.footer ? `<div class="meta" style="margin-top:8px">Pie: ${escapeHtml(t.footer)}</div>` : ''}
+        </article>
+      `).join('');
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    async function loadSession() {
+      const res = await fetch('/api/session');
+      const data = await res.json();
+      if (!data.connected) {
+        window.location.href = '/connect';
+        return null;
+      }
+      const t = data.tenant;
+      const label = t.businessName || t.displayPhone || t.phoneNumberId;
+      document.getElementById('header-tenant').textContent = label;
+      document.getElementById('tenant-line').textContent =
+        `WABA: ${t.wabaId || '—'} · Número: ${t.displayPhone || t.phoneNumberId}`;
+      return t;
+    }
+
+    async function loadTemplates() {
+      try {
+        const res = await fetch('/api/templates');
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Error al cargar plantillas');
+        renderTemplates(data.templates || []);
+      } catch (err) {
+        templateList.innerHTML = `<div class="empty-list">${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    document.getElementById('btn-disconnect').addEventListener('click', async () => {
+      await fetch('/api/disconnect', { method: 'POST' });
+      window.location.href = '/connect';
+    });
+
+    document.getElementById('btn-refresh').addEventListener('click', () => {
+      setStatus('Actualizando lista...');
+      loadTemplates().then(() => setStatus('Lista actualizada', 'success'));
+    });
+
+    bodyInput.addEventListener('input', () => {
+      renderExampleFields();
+      updatePreview();
+    });
+    footerInput.addEventListener('input', updatePreview);
+    nameInput.addEventListener('input', () => {
+      nameInput.value = nameInput.value.toLowerCase().replace(/\s+/g, '_');
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      btnCreate.disabled = true;
+      setStatus('Enviando plantilla a Meta...');
+
+      const examples = [...examplesFields.querySelectorAll('input')].map((el) => el.value.trim());
+
+      try {
+        const res = await fetch('/api/templates', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: nameInput.value,
+            language: languageSelect.value,
+            category: categorySelect.value,
+            body: bodyInput.value,
+            footer: footerInput.value,
+            examples: examples.length ? examples : undefined
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Error al crear plantilla');
+
+        setStatus(
+          `Plantilla "${data.template.name}" creada. Estado: ${statusLabel(data.template.status)}. Meta la revisará en breve.`,
+          'success'
+        );
+        form.reset();
+        renderExampleFields();
+        updatePreview();
+        await loadTemplates();
+      } catch (err) {
+        setStatus(err.message, 'error');
+      } finally {
+        btnCreate.disabled = false;
+      }
+    });
+
+    (async () => {
+      await loadSession();
+      await loadTemplates();
+      updatePreview();
+    })();
+  </script>
+</body>
+</html>

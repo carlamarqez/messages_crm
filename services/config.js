@@ -1,32 +1,38 @@
 /**
  * Copyright 2021-present, Facebook, Inc. All rights reserved.
- *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree.
  */
 
 "use strict";
 
-// Use dotenv to read .env vars into Node
 require("dotenv").config();
 
-// Required environment variables
 const ENV_VARS = [
-  "ACCESS_TOKEN",
   "APP_SECRET",
   "VERIFY_TOKEN",
+  "APP_ID",
   "REDIS_HOST",
   "REDIS_PORT"
 ];
 
-module.exports = Object.freeze({
-  // Application information
-  appSecret: process.env.APP_SECRET,
-  accessToken: process.env.ACCESS_TOKEN,
-  verifyToken: process.env.VERIFY_TOKEN,
+const port = process.env.PORT || 8080;
+const baseUrl = process.env.BASE_URL || `http://localhost:${port}`;
 
-  // Server configuration
-  port: process.env.PORT || 8080,
+module.exports = Object.freeze({
+  appId: process.env.APP_ID,
+  appSecret: process.env.APP_SECRET,
+  verifyToken: process.env.VERIFY_TOKEN,
+  whatsappConfigurationId: process.env.WHATSAPP_CONFIGURATION_ID || null,
+  oauthRedirectUri: process.env.OAUTH_REDIRECT_URI || `${baseUrl}/auth/callback`,
+
+  // Legacy fallbacks (optional if using /connect)
+  accessToken: process.env.ACCESS_TOKEN,
+  phoneNumberId: process.env.PHONE_NUMBER_ID,
+
+  chatAutoReply: process.env.CHAT_AUTO_REPLY === "true",
+  whatsappRegisterPin: process.env.WHATSAPP_REGISTER_PIN || "123456",
+
+  port,
+  baseUrl,
   redisHost: process.env.REDIS_HOST || "localhost",
   redisPort: process.env.REDIS_PORT || 6379,
 
@@ -36,5 +42,13 @@ module.exports = Object.freeze({
         console.warn("WARNING: Missing the environment variable " + key);
       }
     });
+    if (!process.env.WHATSAPP_CONFIGURATION_ID) {
+      console.warn("WARNING: WHATSAPP_CONFIGURATION_ID not set — Embedded Signup parcial; OAuth básico disponible");
+    }
+    if (baseUrl.startsWith("http://localhost")) {
+      console.warn("WARNING: BASE_URL es localhost — para OAuth redirect usá ngrok y actualizá BASE_URL/OAUTH_REDIRECT_URI");
+    }
+    console.log("OAuth redirect URI:", process.env.OAUTH_REDIRECT_URI || `${baseUrl}/auth/callback`);
+    console.log("Connect page (agregá en Meta → Valid OAuth Redirect URIs):", `${baseUrl.replace(/\/$/, "")}/connect`);
   }
 });

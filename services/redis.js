@@ -23,6 +23,10 @@ client.on('error', (err) => {
 
 client.connect();
 
+function getClient() {
+  return client;
+}
+
 module.exports = class Cache {
     static async insert(key) {
         /**
@@ -49,4 +53,6 @@ module.exports = class Cache {
 
         return resp > 0;
     }
-}
+};
+
+module.exports.getClient = getClient;
