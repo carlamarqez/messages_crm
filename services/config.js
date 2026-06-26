@@ -43,7 +43,9 @@ module.exports = Object.freeze({
       }
     });
     if (!process.env.WHATSAPP_CONFIGURATION_ID) {
-      console.warn("WARNING: WHATSAPP_CONFIGURATION_ID not set — Embedded Signup parcial; OAuth básico disponible");
+      console.warn("WARNING: WHATSAPP_CONFIGURATION_ID not set — OAuth en pestaña (sin Embedded Signup). Ver docs/EMBEDDED_SIGNUP.md");
+    } else {
+      console.log("Embedded Signup: activo (Configuration ID configurado)");
     }
     if (baseUrl.startsWith("http://localhost")) {
       console.warn("WARNING: BASE_URL es localhost — para OAuth redirect usá ngrok y actualizá BASE_URL/OAUTH_REDIRECT_URI");

@@ -55,15 +55,16 @@
     <div class="error" id="error-box"></div>
     <div class="info" id="info-box"></div>
 
-    <p class="hint" style="margin-top:0">Iniciá sesión con tu cuenta de Meta para vincular WhatsApp.</p>
+    <p class="hint" style="margin-top:0" id="connect-intro">Iniciá sesión con Meta para vincular tu cuenta de WhatsApp Business.</p>
     <button class="btn btn-meta" id="btn-oauth" disabled>Cargando Meta SDK…</button>
     <p class="status" id="oauth-status"></p>
-    <div class="hint" id="setup-hints">
-      <strong>Configuración en Meta (una sola vez):</strong>
+    <div class="hint" id="setup-hints" style="display:none">
+      <strong>Falta activar Embedded Signup:</strong>
       <ul class="setup-list">
-        <li>App → Facebook Login for Business → <strong>Valid OAuth Redirect URIs</strong>: agregá la URL de esta página (ej. <code id="hint-connect-url">/connect</code>)</li>
-        <li>App → Settings → Basic → <strong>Allowed Domains for the JavaScript SDK</strong>: tu dominio (localhost o ngrok)</li>
-        <li>App → WhatsApp → Embedded Signup → copiá el <strong>Configuration ID</strong> a <code>WHATSAPP_CONFIGURATION_ID</code> en las variables de entorno</li>
+        <li>Meta → WhatsApp → <strong>Embedded Signup</strong> → creá una config y copiá el <strong>Configuration ID</strong></li>
+        <li>En Render (o <code>.env</code>): <code>WHATSAPP_CONFIGURATION_ID=...</code></li>
+        <li>Guía completa: <code>docs/EMBEDDED_SIGNUP.md</code> en el repositorio</li>
+        <li>OAuth Redirect URI de esta página: <code id="hint-connect-url">/connect</code></li>
       </ul>
     </div>
   </div>
@@ -313,13 +314,18 @@
         sdkReady = true;
 
         btnOauth.disabled = false;
-        btnOauth.textContent = appConfig.hasEmbeddedSignup
-          ? 'Continuar con Meta'
-          : 'Continuar con Meta';
 
-        if (!appConfig.hasEmbeddedSignup) {
+        if (appConfig.hasEmbeddedSignup) {
+          btnOauth.textContent = 'Conectar WhatsApp con Meta';
+          document.getElementById('connect-intro').textContent =
+            'Embedded Signup activo. Se abrirá el asistente de Meta para vincular tu número.';
+          document.getElementById('setup-hints').style.display = 'none';
+        } else {
+          btnOauth.textContent = 'Continuar con Meta (OAuth básico)';
+          document.getElementById('setup-hints').style.display = 'block';
           showInfo(
-            'Sin WHATSAPP_CONFIGURATION_ID configurado, el login se abrirá en esta pestaña.'
+            'Embedded Signup no está activo. Agregá WHATSAPP_CONFIGURATION_ID en Render. ' +
+            'Mientras tanto, el login se abre en esta pestaña.'
           );
         }
       } catch (err) {
