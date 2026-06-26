@@ -26,27 +26,11 @@
     }
     h1 { font-size: 1.4rem; margin-bottom: 8px; }
     .subtitle { color: #8696a0; font-size: 0.9rem; margin-bottom: 24px; line-height: 1.5; }
-    .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
-    .tab {
-      flex: 1; padding: 10px; border: none; border-radius: 8px;
-      background: #2a3942; color: #e9edef; cursor: pointer; font-weight: 600;
-    }
-    .tab.active { background: #00a884; color: #fff; }
-    .panel { display: none; }
-    .panel.active { display: block; }
-    label { display: block; font-size: 0.75rem; color: #8696a0; margin: 12px 0 6px; }
-    input, textarea {
-      width: 100%; padding: 10px 12px; border: none; border-radius: 8px;
-      background: #2a3942; color: #e9edef; font-size: 0.9rem; font-family: inherit;
-    }
-    textarea { min-height: 72px; resize: vertical; }
     .btn {
       width: 100%; margin-top: 16px; padding: 14px; border: none; border-radius: 8px;
       font-size: 1rem; font-weight: 600; cursor: pointer;
     }
-    .btn-primary { background: #00a884; color: #fff; }
     .btn-meta { background: #1877f2; color: #fff; }
-    .btn-secondary { background: #2a3942; color: #e9edef; margin-top: 10px; }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .error {
       background: #3d1f1f; color: #f88; padding: 12px; border-radius: 8px;
@@ -66,42 +50,21 @@
 <body>
   <div class="card">
     <h1>Conectar WhatsApp Business</h1>
-    <p class="subtitle">Conectá tu número para enviar y recibir mensajes desde el panel. Los datos se guardan temporalmente en Redis (Memurai).</p>
+    <p class="subtitle">Conectá tu número para enviar y recibir mensajes desde el panel.</p>
 
     <div class="error" id="error-box"></div>
     <div class="info" id="info-box"></div>
 
-    <div class="tabs">
-      <button class="tab active" data-tab="oauth">Login Meta</button>
-      <button class="tab" data-tab="manual">Manual</button>
-    </div>
-
-    <div class="panel active" id="panel-oauth">
-      <p class="hint" style="margin-top:0">Embedded Signup de Meta (recomendado para Technology Provider).</p>
-      <button class="btn btn-meta" id="btn-oauth" disabled>Cargando Meta SDK…</button>
-      <button class="btn btn-secondary" id="btn-oauth-redirect" style="display:none">Login Meta (redirect)</button>
-      <p class="status" id="oauth-status"></p>
-      <div class="hint" id="setup-hints">
-        <strong>Configuración en Meta (una sola vez):</strong>
-        <ul class="setup-list">
-          <li>App → Facebook Login for Business → <strong>Valid OAuth Redirect URIs</strong>: agregá la URL de esta página (ej. <code id="hint-connect-url">/connect</code>)</li>
-          <li>App → Settings → Basic → <strong>Allowed Domains for the JavaScript SDK</strong>: tu dominio (localhost o ngrok)</li>
-          <li>App → WhatsApp → Embedded Signup → copiá el <strong>Configuration ID</strong> a <code>WHATSAPP_CONFIGURATION_ID</code> en <code>.env</code></li>
-        </ul>
-      </div>
-    </div>
-
-    <div class="panel" id="panel-manual">
-      <p class="hint" style="margin-top:0">Pegá los datos desde Meta → WhatsApp → API Setup (útil para desarrollo).</p>
-      <label for="access_token">Access Token</label>
-      <textarea id="access_token" placeholder="EAAG..."></textarea>
-      <label for="phone_number_id">Phone Number ID</label>
-      <input id="phone_number_id" type="text" placeholder="1233281023194907">
-      <label for="waba_id">WABA ID (opcional)</label>
-      <input id="waba_id" type="text" placeholder="2072008253672716">
-      <label for="display_phone">Número mostrado (opcional)</label>
-      <input id="display_phone" type="text" placeholder="+1 555 661 5273">
-      <button class="btn btn-primary" id="btn-manual">Conectar manualmente</button>
+    <p class="hint" style="margin-top:0">Iniciá sesión con tu cuenta de Meta para vincular WhatsApp.</p>
+    <button class="btn btn-meta" id="btn-oauth" disabled>Cargando Meta SDK…</button>
+    <p class="status" id="oauth-status"></p>
+    <div class="hint" id="setup-hints">
+      <strong>Configuración en Meta (una sola vez):</strong>
+      <ul class="setup-list">
+        <li>App → Facebook Login for Business → <strong>Valid OAuth Redirect URIs</strong>: agregá la URL de esta página (ej. <code id="hint-connect-url">/connect</code>)</li>
+        <li>App → Settings → Basic → <strong>Allowed Domains for the JavaScript SDK</strong>: tu dominio (localhost o ngrok)</li>
+        <li>App → WhatsApp → Embedded Signup → copiá el <strong>Configuration ID</strong> a <code>WHATSAPP_CONFIGURATION_ID</code> en las variables de entorno</li>
+      </ul>
     </div>
   </div>
 
@@ -110,7 +73,6 @@
     const infoBox = document.getElementById('info-box');
     const oauthStatus = document.getElementById('oauth-status');
     const btnOauth = document.getElementById('btn-oauth');
-    const btnOauthRedirect = document.getElementById('btn-oauth-redirect');
 
     const EMBEDDED_STORAGE_KEY = 'wa_embedded_signup_data';
 
@@ -164,15 +126,6 @@
     function setOauthStatus(msg) {
       oauthStatus.textContent = msg || '';
     }
-
-    document.querySelectorAll('.tab').forEach((tab) => {
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('.tab').forEach((t) => t.classList.remove('active'));
-        document.querySelectorAll('.panel').forEach((p) => p.classList.remove('active'));
-        tab.classList.add('active');
-        document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
-      });
-    });
 
     window.addEventListener('message', (event) => {
       if (event.origin !== 'https://www.facebook.com' && event.origin !== 'https://web.facebook.com') {
@@ -254,9 +207,7 @@
       setOauthStatus('Abrí la ventana de Meta y completá el flujo…');
 
       const popupHintTimer = setTimeout(() => {
-        showInfo(
-          'Si no se abrió ninguna ventana, permití popups para este sitio o usá "Abrir login en esta pestaña".'
-        );
+        showInfo('Si no se abrió ninguna ventana, permití popups para este sitio en el navegador.');
       }, 2500);
 
       const fallbackRedirectUri = window.location.origin + window.location.pathname;
@@ -282,7 +233,7 @@
           if (response.status === 'unknown') {
             throw new Error(
               'Meta no abrió el login (popup bloqueado o dominio no permitido). ' +
-              'Agregá localhost en Allowed Domains del SDK o usá "Abrir login en esta pestaña".'
+              'Permití popups y verificá Allowed Domains en la app de Meta.'
             );
           }
 
@@ -354,7 +305,7 @@
         document.getElementById('hint-connect-url').textContent = connectUrl;
 
         if (!appConfig.appId) {
-          showError('Falta APP_ID en .env');
+          showError('Falta APP_ID en las variables de entorno');
           return;
         }
 
@@ -363,18 +314,14 @@
 
         btnOauth.disabled = false;
         btnOauth.textContent = appConfig.hasEmbeddedSignup
-          ? 'Continuar con Meta (Embedded Signup)'
+          ? 'Continuar con Meta'
           : 'Continuar con Meta';
 
         if (!appConfig.hasEmbeddedSignup) {
           showInfo(
-            'Sin WHATSAPP_CONFIGURATION_ID: "Continuar con Meta" abre el login en esta pestaña. ' +
-            'Para Embedded Signup con popup, agregá el Configuration ID en .env.'
+            'Sin WHATSAPP_CONFIGURATION_ID configurado, el login se abrirá en esta pestaña.'
           );
         }
-
-        btnOauthRedirect.style.display = 'block';
-        btnOauthRedirect.textContent = 'Abrir login en esta pestaña';
       } catch (err) {
         showError(err.message);
         btnOauth.textContent = 'Error al cargar Meta SDK';
@@ -382,34 +329,6 @@
     }
 
     btnOauth.addEventListener('click', launchMetaConnect);
-
-    btnOauthRedirect.addEventListener('click', redirectToMetaOAuth);
-
-    document.getElementById('btn-manual').addEventListener('click', async () => {
-      const btn = document.getElementById('btn-manual');
-      btn.disabled = true;
-      errorBox.style.display = 'none';
-
-      try {
-        const res = await fetch('/api/connect/manual', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            accessToken: document.getElementById('access_token').value.trim(),
-            phoneNumberId: document.getElementById('phone_number_id').value.trim(),
-            wabaId: document.getElementById('waba_id').value.trim() || null,
-            displayPhone: document.getElementById('display_phone').value.trim() || null
-          })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Error al conectar');
-        window.location.href = '/chat?connected=1';
-      } catch (err) {
-        showError(err.message);
-      } finally {
-        btn.disabled = false;
-      }
-    });
 
     fetch('/api/session').then((r) => r.json()).then((data) => {
       if (data.connected) window.location.href = '/chat';
