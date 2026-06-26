@@ -21,7 +21,7 @@ module.exports = Object.freeze({
   appId: process.env.APP_ID,
   appSecret: process.env.APP_SECRET,
   verifyToken: process.env.VERIFY_TOKEN,
-  whatsappConfigurationId: process.env.WHATSAPP_CONFIGURATION_ID || null,
+  whatsappConfigurationId: process.env.WHATSAPP_CONFIGURATION_ID?.trim() || null,
   oauthRedirectUri: process.env.OAUTH_REDIRECT_URI || `${baseUrl}/auth/callback`,
 
   // Legacy fallbacks (optional if using /connect)

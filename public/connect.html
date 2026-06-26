@@ -42,7 +42,6 @@
     }
     .hint { font-size: 0.75rem; color: #8696a0; margin-top: 16px; line-height: 1.5; }
     .hint code { background: #2a3942; padding: 2px 5px; border-radius: 4px; }
-    .status { font-size: 0.8rem; color: #8696a0; margin-top: 12px; min-height: 1.2em; }
     ul.setup-list { margin: 8px 0 0 18px; font-size: 0.75rem; color: #8696a0; }
     ul.setup-list li { margin-bottom: 4px; }
   </style>
@@ -55,16 +54,15 @@
     <div class="error" id="error-box"></div>
     <div class="info" id="info-box"></div>
 
-    <p class="hint" style="margin-top:0" id="connect-intro">Iniciá sesión con Meta para vincular tu cuenta de WhatsApp Business.</p>
-    <button class="btn btn-meta" id="btn-oauth" disabled>Cargando Meta SDK…</button>
-    <p class="status" id="oauth-status"></p>
+    <p class="hint" style="margin-top:0" id="connect-intro">Cargando…</p>
+    <button class="btn btn-meta" id="btn-oauth" disabled>Conectar WhatsApp con Meta</button>
+
     <div class="hint" id="setup-hints" style="display:none">
       <strong>Falta activar Embedded Signup:</strong>
       <ul class="setup-list">
-        <li>Meta → WhatsApp → <strong>Embedded Signup</strong> → creá una config y copiá el <strong>Configuration ID</strong></li>
-        <li>En Render (o <code>.env</code>): <code>WHATSAPP_CONFIGURATION_ID=...</code></li>
-        <li>Guía completa: <code>docs/EMBEDDED_SIGNUP.md</code> en el repositorio</li>
-        <li>OAuth Redirect URI de esta página: <code id="hint-connect-url">/connect</code></li>
+        <li>Meta → Administrador de registro insertado → copiá el <strong>Configuration ID</strong></li>
+        <li>Variable de entorno: <code>WHATSAPP_CONFIGURATION_ID</code></li>
+        <li>Guía: <code>docs/EMBEDDED_SIGNUP.md</code></li>
       </ul>
     </div>
   </div>
@@ -72,41 +70,7 @@
   <script>
     const errorBox = document.getElementById('error-box');
     const infoBox = document.getElementById('info-box');
-    const oauthStatus = document.getElementById('oauth-status');
     const btnOauth = document.getElementById('btn-oauth');
-
-    const EMBEDDED_STORAGE_KEY = 'wa_embedded_signup_data';
-
-    function loadStoredEmbeddedData() {
-      try {
-        const raw = sessionStorage.getItem(EMBEDDED_STORAGE_KEY);
-        return raw ? JSON.parse(raw) : null;
-      } catch (_) {
-        return null;
-      }
-    }
-
-    function storeEmbeddedData(data) {
-      embeddedSignupData = data;
-      try {
-        sessionStorage.setItem(EMBEDDED_STORAGE_KEY, JSON.stringify(data));
-      } catch (_) {
-        // ignore quota errors
-      }
-    }
-
-    function clearStoredEmbeddedData() {
-      embeddedSignupData = null;
-      try {
-        sessionStorage.removeItem(EMBEDDED_STORAGE_KEY);
-      } catch (_) {
-        // ignore
-      }
-    }
-
-    let appConfig = null;
-    let sdkReady = false;
-    let embeddedSignupData = loadStoredEmbeddedData();
 
     const params = new URLSearchParams(location.search);
     if (params.get('error')) {
@@ -124,223 +88,44 @@
       infoBox.style.display = 'block';
     }
 
-    function setOauthStatus(msg) {
-      oauthStatus.textContent = msg || '';
-    }
-
-    window.addEventListener('message', (event) => {
-      if (event.origin !== 'https://www.facebook.com' && event.origin !== 'https://web.facebook.com') {
-        return;
-      }
-
-      let payload;
-      try {
-        payload = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-      } catch (_) {
-        return;
-      }
-
-      if (payload.type !== 'WA_EMBEDDED_SIGNUP') return;
-
-      if (payload.event === 'FINISH' || payload.event === 'FINISH_ONLY_WABA') {
-        const data = payload.data || {};
-        storeEmbeddedData({
-          waba_id: data.waba_id || data.wabaId || null,
-          phone_number_id: data.phone_number_id || data.phoneNumberId || null
-        });
-        setOauthStatus('WhatsApp configurado. Finalizando conexión…');
-      } else if (payload.event === 'CANCEL') {
-        setOauthStatus('');
-        showError('Cancelaste el flujo de Embedded Signup.');
-        btnOauth.disabled = false;
-      } else if (payload.event === 'ERROR') {
-        setOauthStatus('');
-        const errMsg = payload.data?.error_message || 'Error en Embedded Signup';
-        showError(errMsg);
-        btnOauth.disabled = false;
-      }
-    });
-
-    async function waitForEmbeddedData(maxMs = 15000) {
-      const start = Date.now();
-      while (!embeddedSignupData?.phone_number_id && !embeddedSignupData?.waba_id && Date.now() - start < maxMs) {
-        await new Promise((resolve) => setTimeout(resolve, 200));
-      }
-    }
-
-    async function finishConnect(code) {
-      await waitForEmbeddedData();
-      const fallbackRedirectUri = window.location.origin + window.location.pathname;
-
-      const res = await fetch('/api/connect/code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          code,
-          wabaId: embeddedSignupData?.waba_id || null,
-          phoneNumberId: embeddedSignupData?.phone_number_id || null,
-          fromJsSdk: true,
-          redirectUri: fallbackRedirectUri
-        })
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error al conectar');
-
-      clearStoredEmbeddedData();
-      window.location.href = '/chat?connected=1';
-    }
-
-    function redirectToMetaOAuth() {
-      clearStoredEmbeddedData();
+    function startMetaConnect() {
       window.location.href = '/auth/whatsapp';
     }
 
-    function launchEmbeddedSignupPopup() {
-      if (!sdkReady || typeof FB === 'undefined') {
-        showError('Meta SDK no está listo. Recargá la página.');
-        return;
-      }
-
-      errorBox.style.display = 'none';
-      clearStoredEmbeddedData();
-      btnOauth.disabled = true;
-      setOauthStatus('Abrí la ventana de Meta y completá el flujo…');
-
-      const popupHintTimer = setTimeout(() => {
-        showInfo('Si no se abrió ninguna ventana, permití popups para este sitio en el navegador.');
-      }, 2500);
-
-      const fallbackRedirectUri = window.location.origin + window.location.pathname;
-      const loginOptions = {
-        response_type: 'code',
-        override_default_response_type: true,
-        fallback_redirect_uri: fallbackRedirectUri,
-        extras: {
-          setup: {},
-          sessionInfoVersion: 4
-        }
-      };
-
-      if (appConfig.configurationId) {
-        loginOptions.config_id = appConfig.configurationId;
-      } else {
-        loginOptions.scope = 'whatsapp_business_management,whatsapp_business_messaging';
-      }
-
-      FB.login(async (response) => {
-        clearTimeout(popupHintTimer);
-        try {
-          if (response.status === 'unknown') {
-            throw new Error(
-              'Meta no abrió el login (popup bloqueado o dominio no permitido). ' +
-              'Permití popups y verificá Allowed Domains en la app de Meta.'
-            );
-          }
-
-          if (response.status === 'not_authorized') {
-            throw new Error('No autorizaste los permisos de WhatsApp en Meta.');
-          }
-
-          if (!response.authResponse?.code) {
-            throw new Error('Meta no devolvió un código de autorización. ¿Cancelaste el login?');
-          }
-
-          setOauthStatus('Intercambiando token…');
-          await finishConnect(response.authResponse.code);
-        } catch (err) {
-          showError(err.message);
-          setOauthStatus('');
-          btnOauth.disabled = false;
-        }
-      }, loginOptions);
-    }
-
-    function launchMetaConnect() {
-      if (!sdkReady || typeof FB === 'undefined') {
-        redirectToMetaOAuth();
-        return;
-      }
-
-      if (appConfig?.hasEmbeddedSignup) {
-        launchEmbeddedSignupPopup();
-        return;
-      }
-
-      redirectToMetaOAuth();
-    }
-
-    function loadFacebookSdk(appId, graphVersion) {
-      return new Promise((resolve, reject) => {
-        if (window.FB) {
-          resolve();
-          return;
-        }
-
-        window.fbAsyncInit = function () {
-          FB.init({
-            appId,
-            cookie: true,
-            xfbml: false,
-            version: graphVersion
-          });
-          resolve();
-        };
-
-        const script = document.createElement('script');
-        script.async = true;
-        script.defer = true;
-        script.crossOrigin = 'anonymous';
-        script.src = 'https://connect.facebook.net/es_ES/sdk.js';
-        script.onerror = () => reject(new Error('No se pudo cargar el SDK de Meta'));
-        document.head.appendChild(script);
-      });
-    }
-
-    async function initOAuth() {
+    async function initPage() {
       try {
         const res = await fetch('/api/config/public');
-        appConfig = await res.json();
-
-        const connectUrl = window.location.origin + window.location.pathname;
-        document.getElementById('hint-connect-url').textContent = connectUrl;
+        const appConfig = await res.json();
 
         if (!appConfig.appId) {
           showError('Falta APP_ID en las variables de entorno');
           return;
         }
 
-        await loadFacebookSdk(appConfig.appId, appConfig.graphVersion || 'v21.0');
-        sdkReady = true;
-
         btnOauth.disabled = false;
+        btnOauth.textContent = 'Conectar WhatsApp con Meta';
 
         if (appConfig.hasEmbeddedSignup) {
-          btnOauth.textContent = 'Conectar WhatsApp con Meta';
           document.getElementById('connect-intro').textContent =
-            'Embedded Signup activo. Se abrirá el asistente de Meta para vincular tu número.';
-          document.getElementById('setup-hints').style.display = 'none';
+            'Embedded Signup activo. Se abrirá el asistente de Meta en esta pestaña para vincular tu número.';
+          showInfo('Completá todos los pasos en Meta y volverás al chat automáticamente.');
         } else {
-          btnOauth.textContent = 'Continuar con Meta (OAuth básico)';
+          document.getElementById('connect-intro').textContent =
+            'Iniciá sesión con Meta en esta pestaña para vincular WhatsApp.';
           document.getElementById('setup-hints').style.display = 'block';
-          showInfo(
-            'Embedded Signup no está activo. Agregá WHATSAPP_CONFIGURATION_ID en Render. ' +
-            'Mientras tanto, el login se abre en esta pestaña.'
-          );
         }
       } catch (err) {
         showError(err.message);
-        btnOauth.textContent = 'Error al cargar Meta SDK';
       }
     }
 
-    btnOauth.addEventListener('click', launchMetaConnect);
+    btnOauth.addEventListener('click', startMetaConnect);
 
     fetch('/api/session').then((r) => r.json()).then((data) => {
       if (data.connected) window.location.href = '/chat';
     });
 
-    initOAuth();
+    initPage();
   </script>
 </body>
 </html>

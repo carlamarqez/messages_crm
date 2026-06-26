@@ -225,7 +225,9 @@ app.get("/api/config/public", (req, res) => {
   const connectUrl = `${config.baseUrl.replace(/\/$/, "")}/connect`;
   res.json({
     appId: config.appId,
-    configurationId: config.whatsappConfigurationId,
+    configurationId: config.whatsappConfigurationId
+      ? String(config.whatsappConfigurationId).trim()
+      : null,
     baseUrl: config.baseUrl,
     oauthRedirectUri: config.oauthRedirectUri,
     connectUrl,
